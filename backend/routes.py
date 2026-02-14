@@ -6,7 +6,7 @@ from app.core.events.event_bus import EventBus
 from app.core.events.enums import EventType, PlatformType
 from app.core.events.base import BaseEvent
 from app.core.handler.handler_registry import HandlerRegistry
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from typing import Optional, Dict, Any
 
 router = APIRouter()
@@ -48,10 +48,15 @@ register_event_handlers()
 async def github_webhook(request: Request):
     try:
         raw_payload = await request.json()
-        payload = GitHubWebhookPayload(**raw_payload)
     except Exception as e:
-        logging.error(f"Invalid webhook payload: {e}")
-        raise HTTPException(status_code=400, detail="Invalid webhook payload")
+        logging.error("Failed to parse JSON payload")
+        raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
+
+    try:
+        payload = GitHubWebhookPayload(**raw_payload)
+    except ValidationError as e:
+        logging.error(f"Webhook schema validation failed: {e}")
+        raise HTTPException(status_code=422, detail="Invalid webhook schema") from e
 
     event_header = request.headers.get("X-GitHub-Event")
     logging.info(f"Received GitHub event: {event_header}")

@@ -94,7 +94,7 @@ async def github_webhook(request: Request):
                 logging.info("Pull request closed without merge; no event dispatched.")
 
     # Handle pull request comment events
-    elif event_header in ["pull_request_review_comment", "pull_request_comment"]:
+    elif event_header in ["pull_request_review_comment", "pull_request_review"]:
         action = payload.action
         if action == "created":
             event_type = EventType.PR_COMMENTED
